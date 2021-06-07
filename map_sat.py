@@ -10,6 +10,7 @@ from pysmt import typing
 import math
 import argparse
 import csv
+from utils import data_generation
 
 class map_sat():
 
@@ -200,7 +201,16 @@ class map_sat():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='check 2d robot map satisfiability.')
     # parser.add_argument('int 2D grid size')
+    
+    '''
+    parser.add_argument('--size', type=int, default=5)
+    parser.add_argument('--blocks', type=int, default=4)
+    args = parser.parse_args()
 
+    # generate data (16 blocks at most)
+    data_directory = data_generation(args.size, args.blocks)
+    '''
+    
     m = map_sat()
 
     # run solver with the obstacle file, and 1 of 3 path types
