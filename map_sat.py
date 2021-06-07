@@ -2,8 +2,8 @@
 # minimum obstacle removal on a 2d grid
 # Authors: Andrey Kornilovich & Chunxue Xu
 
-from pysmt.shortcuts import Symbol, And, Not, Equals, NotEquals, Int, get_model
-from pysmt.shortcuts import Solver, is_sat
+from pysmt.shortcuts import Symbol, And, Not, Or, Equals, NotEquals, Bool, TRUE, FALSE
+from pysmt.shortcuts import Solver, is_sat, get_model, serialize, simplify, get_atoms
 import numpy as np
 from pysmt import typing
 
@@ -57,9 +57,9 @@ class map_sat():
 
                 line_count += 1
 
-            print(self.n)
-            print(self.num_obst)
-            print(self.obst)
+            print(f"size of map: {self.n} x {self.n}")
+            print(f"number of obstacles: {self.num_obst}")
+            print(f"obstacle_list: {self.obst}\n")
 
     def print_map(self):
         '''
@@ -106,9 +106,9 @@ class map_sat():
 
     def pt_obst_coverage(self, pt):
         pt_obst_list = []
-        for obst in self.obst:
-            if self.covered_by_obst(pt, obst):
-                pt_obst_list.append(obst)
+        for i in range(self.num_obst):
+            if self.covered_by_obst(pt, self.obst[i]):
+                pt_obst_list.append(i)
         return pt_obst_list
 
 
@@ -153,17 +153,19 @@ class map_sat():
                 path.append((self.n - 1, y))
 
         # print(len(path))
-        # print(path)
-        # assert len(path) ==  self.k, "path length incorrect"
+        print(path)
+        assert len(path) ==  self.k, "path length incorrect"
         self.path = path
 
-    # def return_symbol(self, pt):
-        # return Symbol("")
 
-    def add_path_formula(self, solver, pt):
+    def pt_formula(self, pt):
         pt_obst_list = self.pt_obst_coverage(pt)
-        for obst in pt_obst_list:
-            pass
+
+        if pt_obst_list:
+            formula = Or([Symbol(f"o{i}") for i in pt_obst_list])
+            return formula
+        else:
+            return TRUE()
 
 
     def get_prepared_solver(self, path_type, obst_limit):
@@ -174,28 +176,44 @@ class map_sat():
         """
 
         self.path_coordinates(path_type)
-        # self.print_map()
+        self.print_map()
 
         # decrement obst counter to set limit to boolean formula construction
-        solver = Solver()
+        self.obst_limit = obst_limit
 
         # loop through points in the path, and construct obstacle literals
-        for k in range(self.k):
-            self.add_path_formula(solver, self.path[k])
+        formula = And(self.pt_formula(self.path[k]) for k in range(0, self.k))
 
-        return solver
+        return formula
 
 
     def solve(self, obst_file, path_type):
         self.read_obst_csv(obst_file)
-        self.get_prepared_solver(path_type, 1)
+        formula = self.get_prepared_solver(path_type, 4)
 
-        # with Solver() as solver:
-            # solver.add_assertion(self.formula)
-            # if solver.solve():
-                # print("yay")
-            # else:
-                # print("No solution found")
+        print("\nmap formula:")
+        # print(f"full      : {formula}")
+        print(f"full      : {formula.serialize()}")
+        print(f"simplified: {simplify(formula)}")
+        print(f"atoms     : {get_atoms(formula)}\n")
+
+        m = get_model(formula)
+        if m:
+            print("SAT")
+            print(m)
+            # print(m[Symbol("o1")])
+        else:
+            print("UNSAT")
+
+        # with Solver(name="msat") as solver:
+        #     solver.add_assertion(formula)
+        #     if solver.solve():
+        #         print("SAT")
+        #         print(solver.get_py_value(formula))
+                
+        #     else:
+        #         print("UNSAT")
+
 
 
 if __name__ == "__main__":
