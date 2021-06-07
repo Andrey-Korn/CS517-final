@@ -69,20 +69,19 @@ class map_sat():
         '!' == critical chosen path. Covered by an obstacle
         '''
         print("\n")
-        # graph = np.chararray((self.n, self.n))
         graph = np.empty((self.n, self.n), dtype='str')
 
         for x in range(self.n):
             for y in range(self.n):
-                # print(x, y)
-                if self.in_path(x, y):
+                pt = (x, y)
+                if self.in_path(pt):
                     # print("in path")
-                    if self.is_obstructed(x, y):
+                    if self.is_obstructed(pt):
                         graph[y][x] = '!'
                     else:
                         graph[y][x] = '-'
                 else:
-                    if self.is_obstructed(x, y):
+                    if self.is_obstructed(pt):
                         graph[y][x] = '1'
                     else:
                         graph[y][x] = '0'
@@ -92,24 +91,30 @@ class map_sat():
         for y in range(self.n - 1, -1, -1):
             print(graph[y])
 
-    def in_path(self, x, y):
+    def in_path(self, pt):
         for i in range(len(self.path)):
-            if self.path[i] == (x, y):
+            if self.path[i] == pt:
                 return True
-    
         return False
 
-    def covered_by_obst(self, x, y, obst):
-        if obst[0] <= x <= obst[1] and obst[2] <= y <= self.obst[3]:
+    def covered_by_obst(self, pt, obst):
+        x, y = pt[0], pt[1]
+        if obst[0] <= x <= obst[1] and obst[2] <= y <= obst[3]:
             return True
-
         return False
 
-    def is_obstructed(self, x, y):
-        for i in range(self.num_obst):
-            if self.covered_by_obst(x, y, self.obst[i]):
-                return True
+    def pt_obst_coverage(self, pt):
+        pt_obst_list = []
+        for obst in self.obst:
+            if self.covered_by_obst(pt, obst):
+                pt_obst_list.append(obst)
+        return pt_obst_list
 
+
+    def is_obstructed(self, pt):
+        for i in range(self.num_obst):
+            if self.covered_by_obst(pt, self.obst[i]):
+                return True
         return False
 
     def path_coordinates(self, path_type):
@@ -151,11 +156,13 @@ class map_sat():
         # assert len(path) ==  self.k, "path length incorrect"
         self.path = path
 
-    def return_symbol(self, x, y):
-        return Symbol("")
+    # def return_symbol(self, pt):
+        # return Symbol("")
 
-    def return_path_formula(self, point):
-        x, y = point
+    def add_path_formula(self, solver, pt):
+        pt_obst_list = self.pt_obst_coverage(pt)
+        for obst in pt_obst_list:
+            pass
 
 
     def get_prepared_solver(self, path_type, obst_limit):
@@ -169,15 +176,11 @@ class map_sat():
         # self.print_map()
 
         # decrement obst counter to set limit to boolean formula construction
-        self.remaining_obst = obst_limit
         solver = Solver()
-
-        # var_table = [Symbol()]
 
         # loop through points in the path, and construct obstacle literals
         for k in range(self.k):
-            # solver.add_assertion(self.return_path_formula(self.path[k]))
-            pass
+            self.add_path_formula(solver, self.path[k])
 
         return solver
 
