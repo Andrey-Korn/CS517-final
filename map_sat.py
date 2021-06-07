@@ -3,7 +3,7 @@
 # Authors: Andrey Kornilovich & Chunxue Xu
 
 from pysmt.shortcuts import Symbol, And, Not, Or, Equals, NotEquals, Bool, TRUE, FALSE
-from pysmt.shortcuts import Solver, is_sat, get_model, serialize, simplify
+from pysmt.shortcuts import Solver, is_sat, get_model, serialize, simplify, get_atoms
 import numpy as np
 from pysmt import typing
 
@@ -168,7 +168,6 @@ class map_sat():
             return TRUE()
 
 
-
     def get_prepared_solver(self, path_type, obst_limit):
         """
         Return a solver for the obstacle map. Pick one of 3
@@ -192,15 +191,29 @@ class map_sat():
         self.read_obst_csv(obst_file)
         formula = self.get_prepared_solver(path_type, 4)
 
-        print(f"full       formula: {formula}")
-        print(f"simplified formula: {simplify(formula)}")
-        m = get_model(formula)
+        print("\nmap formula:")
+        # print(f"full      : {formula}")
+        print(f"full      : {formula.serialize()}")
+        print(f"simplified: {simplify(formula)}")
+        print(f"atoms     : {get_atoms(formula)}\n")
 
-        if m is not None:
+        m = get_model(formula)
+        if m:
             print("SAT")
             print(m)
+            # print(m[Symbol("o1")])
         else:
             print("UNSAT")
+
+        # with Solver(name="msat") as solver:
+        #     solver.add_assertion(formula)
+        #     if solver.solve():
+        #         print("SAT")
+        #         print(solver.get_py_value(formula))
+                
+        #     else:
+        #         print("UNSAT")
+
 
 
 if __name__ == "__main__":
