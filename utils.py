@@ -4,6 +4,7 @@ from matplotlib.patches import Rectangle
 import networkx as nx
 import csv
 
+# 16 colors
 colors = ['r', 'g', 'b', 'k', '#a6cee3','#ffff99','#b2df8a','#33a02c','#fb9a99','#e31a1c','#ff7f00','#1f78b4','#fdbf6f','#cab2d6','#6a3d9a','#b15928']
 
 
