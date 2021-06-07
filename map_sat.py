@@ -99,9 +99,15 @@ class map_sat():
     
         return False
 
+    def covered_by_obst(self, x, y, obst):
+        if obst[0] <= x <= obst[1] and obst[2] <= y <= self.obst[3]:
+            return True
+
+        return False
+
     def is_obstructed(self, x, y):
         for i in range(self.num_obst):
-            if self.obst[i][0] <= x <= self.obst[i][1] and self.obst[i][2] <= y <= self.obst[i][3]:
+            if self.covered_by_obst(x, y, self.obst[i]):
                 return True
 
         return False
@@ -141,27 +147,44 @@ class map_sat():
                 path.append((self.n - 1, y))
 
         # print(len(path))
-        print(path)
+        # print(path)
         # assert len(path) ==  self.k, "path length incorrect"
         self.path = path
 
-    def get_prepared_solver(self, path_type):
+    def return_symbol(self, x, y):
+        return Symbol("")
+
+    def return_path_formula(self, point):
+        x, y = point
+
+
+    def get_prepared_solver(self, path_type, obst_limit):
         """
         Return a solver for the obstacle map. Pick one of 3
         s-t path types: diagonal, right->up, and up->right.
         s is always at (0,0), and t will always be at (n-1, n-1)
         """
 
-        path = self.path_coordinates(path_type)
-        self.print_map()
-        # solver = Solver()
+        self.path_coordinates(path_type)
+        # self.print_map()
 
-        # return solver
+        # decrement obst counter to set limit to boolean formula construction
+        self.remaining_obst = obst_limit
+        solver = Solver()
+
+        # var_table = [Symbol()]
+
+        # loop through points in the path, and construct obstacle literals
+        for k in range(self.k):
+            # solver.add_assertion(self.return_path_formula(self.path[k]))
+            pass
+
+        return solver
 
 
     def solve(self, obst_file, path_type):
         self.read_obst_csv(obst_file)
-        self.get_prepared_solver(path_type)
+        self.get_prepared_solver(path_type, 1)
 
         # with Solver() as solver:
             # solver.add_assertion(self.formula)
