@@ -2,7 +2,7 @@
 # minimum obstacle removal on a 2d grid
 # Authors: Andrey Kornilovich & Chunxue Xu
 
-from pysmt.shortcuts import Symbol, And, Not, Or, Equals, NotEquals, Bool, TRUE, FALSE
+from pysmt.shortcuts import Symbol, And, Not, Or, Equals, NotEquals, Bool, Iff, TRUE, FALSE
 from pysmt.shortcuts import Solver, is_sat, get_model, serialize, simplify, get_atoms
 import numpy as np
 from pysmt import typing
@@ -11,6 +11,9 @@ import math
 import argparse
 import csv
 from utils import data_generation
+
+DEBUG = True
+CSV_DEBUG = False
 
 class map_sat():
 
@@ -24,11 +27,13 @@ class map_sat():
 
 
     def read_obst_csv(self, filename):
+
         with open(filename) as file:
             csv_reader = csv.reader(file, delimiter=",")
             line_count = 0
             self.obst = []
             for row in csv_reader:
+
                 # first line in csv is graph size
                 if line_count == 0:
                     self.n = int(row[0])
@@ -57,9 +62,11 @@ class map_sat():
 
                 line_count += 1
 
-            print(f"size of map: {self.n} x {self.n}")
-            print(f"number of obstacles: {self.num_obst}")
-            print(f"obstacle_list: {self.obst}\n")
+            if(CSV_DEBUG):
+                print(f"size of map: {self.n} x {self.n}")
+                print(f"number of obstacles: {self.num_obst}")
+                print(f"obstacle_list: {self.obst}\n")
+
 
     def print_map(self):
         '''
@@ -93,36 +100,7 @@ class map_sat():
             print(graph[y])
 
 
-    def in_path(self, pt):
-        for i in range(len(self.path)):
-            if self.path[i] == pt:
-                return True
-        return False
-
-
-    def covered_by_obst(self, pt, obst):
-        x, y = pt[0], pt[1]
-        if obst[0] <= x <= obst[1] and obst[2] <= y <= obst[3]:
-            return True
-        return False
-
-
-    def pt_obst_coverage(self, pt):
-        pt_obst_list = []
-        for i in range(self.num_obst):
-            if self.covered_by_obst(pt, self.obst[i]):
-                pt_obst_list.append(i)
-        return pt_obst_list
-
-
-    def is_obstructed(self, pt):
-        for i in range(self.num_obst):
-            if self.covered_by_obst(pt, self.obst[i]):
-                return True
-        return False
-
-
-    def path_coordinates(self, path_type):
+    def build_path(self, path_type):
         path = []
         # x, y = 0, 0
 
@@ -159,9 +137,39 @@ class map_sat():
         # print(len(path))
         print(path)
         assert len(path) ==  self.k, "path length incorrect"
-        self.path = path
+        return path
 
-    def pt_formula(self, pt):
+
+    def in_path(self, pt):
+        for i in range(len(self.path)):
+            if self.path[i] == pt:
+                return True
+        return False
+
+
+    def covered_by_obst(self, pt, obst):
+        x, y = pt[0], pt[1]
+        if obst[0] <= x <= obst[1] and obst[2] <= y <= obst[3]:
+            return True
+        return False
+
+
+    def pt_obst_coverage(self, pt):
+        pt_obst_list = []
+        for i in range(self.num_obst):
+            if self.covered_by_obst(pt, self.obst[i]):
+                pt_obst_list.append(i)
+        return pt_obst_list
+
+
+    def is_obstructed(self, pt):
+        for i in range(self.num_obst):
+            if self.covered_by_obst(pt, self.obst[i]):
+                return True
+        return False
+
+
+    def construct_pt_clause(self, pt):
         pt_obst_list = self.pt_obst_coverage(pt)
 
         if pt_obst_list:
@@ -171,39 +179,67 @@ class map_sat():
             return TRUE()
 
 
-    def get_prepared_solver(self, path_type, obst_limit):
-        """
-        Return a solver for the obstacle map. Pick one of 3
-        s-t path types: diagonal, right->up, and up->right.
-        s is always at (0,0), and t will always be at (n-1, n-1)
-        """
-
-        self.path_coordinates(path_type)
-        self.print_map()
+    def get_path_formula(self, path):
+        # self.print_map()
 
         # loop through points in the path, and construct obstacle literals
-        formula = And(self.pt_formula(self.path[k]) for k in range(0, self.k))
+        formula = And(self.construct_pt_clause(path[k]) for k in range(0, self.k))
 
         return formula
 
 
-    def solve(self, obst_file, path_type):
+    def build_result_formula(self, literals):
+        for value in literals:
+            # print(type(value[0]))
+            print(value[0], value[1])
+        # print(literals[Symbol("o0")])
+        return And([Iff(val[0], val[1]) for val in literals])
+
+
+    def solve(self, path):
+        sol_exists = True
+        solutions = []
+        formula = self.get_path_formula(path)
+
+        while(sol_exists):
+
+            print("\nformula of chosen path:")
+            # print(f"full      : {formula}")
+            print(f"full      : {formula.serialize()}")
+            print(f"simplified: {simplify(formula)}")
+            print(f"obstacles : {get_atoms(formula)}\n")
+
+            res = get_model(formula)
+
+            if res:
+                print("SAT")
+                # print(res)
+                
+                solutions.append(res)
+                negated_solution = Not(self.build_result_formula(res))
+                # print(negated_solution)
+                formula = And(negated_solution, formula)
+
+            else:
+                print("UNSAT")
+                sol_exists = False
+
+        return solutions
+
+
+    def best_cost(self):
+        pass
+
+
+    def solve_all_paths(self, obst_file):
         self.read_obst_csv(obst_file)
-        formula = self.get_prepared_solver(path_type, 4)
+        diagonal_results = self.solve(self.build_path(0)) 
+        # up_right_results = self.solve(self.build_path(1)) 
+        # right_up_results = self.solve(self.build_path(2)) 
 
-        print("\nformula of chosen path:")
-        # print(f"full      : {formula}")
-        print(f"full      : {formula.serialize()}")
-        print(f"simplified: {simplify(formula)}")
-        print(f"obstacles : {get_atoms(formula)}\n")
-
-        m = get_model(formula)
-        if m:
-            print("SAT")
-            print(m)
-            # print(m[Symbol("o1")])
-        else:
-            print("UNSAT")
+        # diagonal_cost, diagonal_path = self.best_cost()
+        # up_right_cost, up_right_path = self.best_cost()
+        # right_up_cost, right_up_path = self.best_cost()
 
 
 if __name__ == "__main__":
@@ -221,5 +257,7 @@ if __name__ == "__main__":
     
     m = map_sat()
 
-    # run solver with the obstacle file, and 1 of 3 path types
-    m.solve("test1.csv", 2)
+    # m.solve("test1.csv", 2)
+
+    # pass in obstacle csv to the solver
+    m.solve_all_paths("test1.csv")
