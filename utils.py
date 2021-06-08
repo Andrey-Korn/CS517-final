@@ -14,13 +14,15 @@ def data_generation(N, num_block, plotting=False):
 
     # random block for start point s
     [s_x2, s_y2] = np.random.randint(N, size=2)
-    result.append([0, s_x2, 0, s_y2])
+    s_weight = int(np.random.randint(low=1, high=N, size=1))
+    result.append([0, s_x2, 0, s_y2, s_weight])
 
     # random block for internal blocks
     for i in range(num_block-1):
         [x1, x2] = sorted(np.random.randint(N, size=2))
         [y1, y2] = sorted(np.random.randint(N, size=2))
-        result.append([x1, x2, y1, y2])
+        weight = int(np.random.randint(low=1, high=N, size=1))
+        result.append([x1, x2, y1, y2, weight])
 
     with open(file_name, mode='w') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
@@ -45,7 +47,7 @@ def data_generation(N, num_block, plotting=False):
         cmap = plt.get_cmap('jet', 20)
         cmap.set_under('gray')
         for i, boundary in enumerate(result):
-            x0, x1, y0, y1 = boundary
+            x0, x1, y0, y1, _ = boundary
             ax.add_patch(Rectangle((x0-0.3, y0-0.3), x1-x0+0.6, y1-y0+0.6, linewidth=1, facecolor=colors[i], alpha=0.5))
 
         limits = plt.axis('on')
@@ -58,7 +60,7 @@ def data_generation(N, num_block, plotting=False):
 
 
 def main():
-    data_generation(20, 10, plotting=True)
+    data_generation(15, 10, plotting=True)
 
 
 if __name__ == '__main__':
