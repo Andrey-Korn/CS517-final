@@ -14,7 +14,6 @@ from utils import data_generation
 
 class map_sat():
 
-
     def __init__(self):
         self.map = []
         self.n = 0
@@ -22,6 +21,7 @@ class map_sat():
         self.path = []
         self.obst = []
         self.num_obst = 0
+
 
     def read_obst_csv(self, filename):
         with open(filename) as file:
@@ -92,17 +92,20 @@ class map_sat():
         for y in range(self.n - 1, -1, -1):
             print(graph[y])
 
+
     def in_path(self, pt):
         for i in range(len(self.path)):
             if self.path[i] == pt:
                 return True
         return False
 
+
     def covered_by_obst(self, pt, obst):
         x, y = pt[0], pt[1]
         if obst[0] <= x <= obst[1] and obst[2] <= y <= obst[3]:
             return True
         return False
+
 
     def pt_obst_coverage(self, pt):
         pt_obst_list = []
@@ -117,6 +120,7 @@ class map_sat():
             if self.covered_by_obst(pt, self.obst[i]):
                 return True
         return False
+
 
     def path_coordinates(self, path_type):
         path = []
@@ -157,7 +161,6 @@ class map_sat():
         assert len(path) ==  self.k, "path length incorrect"
         self.path = path
 
-
     def pt_formula(self, pt):
         pt_obst_list = self.pt_obst_coverage(pt)
 
@@ -178,9 +181,6 @@ class map_sat():
         self.path_coordinates(path_type)
         self.print_map()
 
-        # decrement obst counter to set limit to boolean formula construction
-        self.obst_limit = obst_limit
-
         # loop through points in the path, and construct obstacle literals
         formula = And(self.pt_formula(self.path[k]) for k in range(0, self.k))
 
@@ -191,11 +191,11 @@ class map_sat():
         self.read_obst_csv(obst_file)
         formula = self.get_prepared_solver(path_type, 4)
 
-        print("\nmap formula:")
+        print("\nformula of chosen path:")
         # print(f"full      : {formula}")
         print(f"full      : {formula.serialize()}")
         print(f"simplified: {simplify(formula)}")
-        print(f"atoms     : {get_atoms(formula)}\n")
+        print(f"obstacles : {get_atoms(formula)}\n")
 
         m = get_model(formula)
         if m:
@@ -204,16 +204,6 @@ class map_sat():
             # print(m[Symbol("o1")])
         else:
             print("UNSAT")
-
-        # with Solver(name="msat") as solver:
-        #     solver.add_assertion(formula)
-        #     if solver.solve():
-        #         print("SAT")
-        #         print(solver.get_py_value(formula))
-                
-        #     else:
-        #         print("UNSAT")
-
 
 
 if __name__ == "__main__":
