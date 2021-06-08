@@ -2,18 +2,20 @@
 # minimum obstacle removal on a 2d grid
 # Authors: Andrey Kornilovich & Chunxue Xu
 
-from pysmt.shortcuts import Symbol, And, Not, Or, Equals, NotEquals, Bool, Iff, TRUE, FALSE
-from pysmt.shortcuts import Solver, is_sat, get_model, serialize, simplify, get_atoms
-import numpy as np
-from pysmt import typing
+# import pysmt shortcuts
+from pysmt.shortcuts import Symbol, And, Not, Or, Iff, TRUE, FALSE
+from pysmt.shortcuts import get_model, serialize, simplify, get_atoms
 
-import math
+# import standard python libraries
+import os
+import logging as log
+import numpy as np
 import argparse
 import csv
+
 from utils import data_generation
 
-DEBUG = True
-CSV_DEBUG = True
+debug_file = 'info.log'
 
 class map_sat():
 
@@ -25,14 +27,28 @@ class map_sat():
         self.obst = []
         self.num_obst = 0
 
+        # delete old log file
+        if os.path.isfile(debug_file):
+            os.remove(debug_file)
+
+        # setup log file
+        log.basicConfig(format='%(message)s', filename=debug_file, level=log.INFO)
+
 
     def read_obst_csv(self, filename="test1.csv"):
+        '''
+        Read in obstacle csv. First line is graph size n, second
+        line is #_obstacles, and the following are obstacle coordinates
+        '''
 
         with open(filename) as file:
             csv_reader = csv.reader(file, delimiter=",")
+
+            # save obstacles to class for use later
             line_count = 0
-            # self.obst = []
             self.obst = {}
+
+            # iterate through csv
             for row in csv_reader:
 
                 # first line in csv is graph size
@@ -44,29 +60,22 @@ class map_sat():
                 elif line_count == 1:
                     self.num_obst = int(row[0])
 
-                # add obstacles as a 5-tuple representing:
-                # x1, x2, y1, y2 of the rectangle, and weight 
+                # add obstacles as a 5-tuple to a dictionary:
+                # (x1, x2, y1, y2 of the rectangle, weight) 
                 else:
-                    # dictionary append
                     self.obst[Symbol(f"o{line_count - 2}")] = ((int(row[0])
                                                               , int(row[1])
                                                               , int(row[2])
                                                               , int(row[3])
                                                               , int(row[4]) ))
 
-                    # list append
-                    # self.obst.append((int(row[0])
-                    #                 , int(row[1])
-                    #                 , int(row[2])
-                    #                 , int(row[3]) 
-                    #                 , int(row[4]) ))
-
                 line_count += 1
 
-            if(CSV_DEBUG):
-                print(f"size of map: {self.n} x {self.n}")
-                print(f"number of obstacles: {self.num_obst}")
-                print(f"obstacle_dictionary: {self.obst}\n")
+            log.info("Obstacle data read successfully")
+            log.info(f"size of map: {self.n} x {self.n}")
+            log.info(f"length of paths: {self.k}")
+            log.info(f"number of obstacles: {self.num_obst}")
+            log.info(f"obstacle_dictionary: {self.obst}\n")
 
 
     def print_map(self):
@@ -102,12 +111,15 @@ class map_sat():
 
 
     def build_path(self, path_type):
+        '''
+        construct a list of (x,y) coordinates representing
+        1 of 3 paths. All paths will be of length (2*n)-1
+        '''
         path = []
-        # x, y = 0, 0
 
         # diagonal path
         if path_type == 0:
-            print("diagonal path")
+            log.info("diagonal path:")
             x, y = 0, 0
             for k in range(self.k//2):
                 path.append((x, y))
@@ -119,7 +131,7 @@ class map_sat():
 
         # up -> right path
         elif path_type == 1:
-            print("up -> right path")
+            log.info("up -> right path:")
             for y in range(self.n - 1):
                 path.append((0, y))
 
@@ -128,19 +140,19 @@ class map_sat():
 
         # right -> up path
         else:
-            print("right -> up path")
+            log.info("right -> up path:")
             for x in range(self.n - 1):
                path.append((x, 0))
 
             for y in range(self.n):
                 path.append((self.n - 1, y))
 
-        # print(len(path))
-        print(path)
+        log.info(f"{path}\n")
         assert len(path) ==  self.k, "path length incorrect"
         return path
 
 
+    # delete if old graph function is removed
     def in_path(self, pt):
         for i in range(len(self.path)):
             if self.path[i] == pt:
@@ -149,22 +161,26 @@ class map_sat():
 
 
     def covered_by_obst(self, pt, obst_num):
+        '''check if (x,y) covered by a specific obstacle'''
+        # grab obstacle from dictionary
         obst = self.obst[self.obst_symbol(obst_num)]
         x, y = pt[0], pt[1]
+        # check if point is within rectangular obstacle area
         if obst[0] <= x <= obst[1] and obst[2] <= y <= obst[3]:
             return True
         return False
 
 
     def pt_obst_coverage(self, pt):
+        '''return list of obstacle numbers that cover a point'''
         pt_obst_list = []
         for i in range(self.num_obst):
-            # if self.covered_by_obst(pt, self.obst[i]):
             if self.covered_by_obst(pt, i):
                 pt_obst_list.append(i)
         return pt_obst_list
 
 
+    # delete alongside old graph function
     def is_obstructed(self, pt):
         for i in range(self.num_obst):
             if self.covered_by_obst(pt, i):
@@ -173,100 +189,153 @@ class map_sat():
 
 
     def construct_pt_clause(self, pt):
+        '''
+        Return Boolean formula for a point clause for SAT checking.
+        For every obstacle covering the point, OR together those
+        obstacles. If the point is not covered, just return True.
+        '''
+        # find what obstacles cover a given point (list of obstacle indices)
         pt_obst_list = self.pt_obst_coverage(pt)
 
+        # OR of SMT symbols built with the obstacle indices
         if pt_obst_list:
-            formula = Or([self.obst_symbol(i) for i in pt_obst_list])
-            return formula
-        else:
-            return TRUE()
+            return Or([self.obst_symbol(i) for i in pt_obst_list])
+
+        # if uncovered, return true
+        return TRUE()
 
 
     def get_path_formula(self, path):
-        # self.print_map()
-
-        # loop through points in the path, and construct obstacle literals
-        formula = And(self.construct_pt_clause(path[k]) for k in range(0, self.k))
-
-        return formula
+        '''
+        Construct boolean formula. Create k (len of path) clauses.
+        Use And to connect all point clauses together.
+        '''
+        return And(self.construct_pt_clause(path[k]) for k in range(0, self.k))
 
 
     def obst_symbol(self, obst_num):
+        '''
+        return SMT bool symbol for an obstacle, used both for constructing
+        formulas, and for generating obstacle dictionary keys
+        '''
         return Symbol(f"o{obst_num}")
 
 
     def build_result_formula(self, literals):
-        for value in literals:
-            # print(type(value[0]))
-            print(value[0], value[1])
-        # print(literals[Symbol("o0")])
+        '''
+        Construct Boolean formula based on previous SAT results. Used to 
+        prevent the same solution being possible on subsequent SAT checks.
+        Use Iff() to force equality between the obstacle symbol and previous
+        T/F value.
+        '''
+        # for value in literals:
+            # print(value[0], value[1])
+
+        # loop through all boolean values
         return And([Iff(val[0], val[1]) for val in literals])
 
 
     def solve(self, path):
-        sol_exists = True
+        '''
+        Solve boolean formula of path/obstacle SAT representation.
+        Whenever a solution is found, negate the result, And() 
+        it to the existing formula, and continue finding more solutions.
+        '''
         solutions = []
         formula = self.get_path_formula(path)
 
-        while(sol_exists):
+        # log formula information
+        log.info("Boolean formula of path:")
+        log.info(f"full      : {formula.serialize()}")
+        log.info(f"simplified: {simplify(formula)}")
+        log.info(f"obstacles : {get_atoms(formula)}\n")
 
-            print("\nformula of chosen path:")
-            # print(f"full      : {formula}")
-            print(f"full      : {formula.serialize()}")
-            # print(f"simplified: {simplify(formula)}")
-            # print(f"obstacles : {get_atoms(formula)}\n")
+        while(True):
 
+            # Get satisfiability results
             res = get_model(formula)
 
             if res:
-                print("SAT")
-                # print(res)
                 solutions.append(res)
+
+                log.info("SAT solution:")
+                log.info(f"{res}\n")
+
+                # get negation of result. Add to formula and rerun to 
+                # find all solutions
                 negated_solution = Not(self.build_result_formula(res))
-                # print(negated_solution)
                 formula = And(negated_solution, formula)
 
+            # All solutions found, break
             else:
-                print("UNSAT")
-                sol_exists = False
+                log.info("UNSAT, no more solutions.")
+                break
 
         return solutions
 
 
     def best_cost(self, solutions):
+        '''
+        Given a set of solutions to the obstacle map for a given path, 
+        return the solution with the minimum overall cost
+        '''
         min_cost = float('inf')
         min_solution = None
+
+        # iterate through all solutions
+        sol_num = 1
         for sol in solutions:
-            print("solution")
             current_cost = 0
             for lit in sol:
-                print(lit[0], lit[1])
                 current_cost += self.obst[lit[0]][4] * (int(lit[1] == TRUE()))
 
-            print(current_cost)
+            log.info(f"cost of solution {sol_num}: {current_cost}")
 
             if current_cost <= min_cost:
                 min_cost = current_cost
                 min_solution = sol
+
+            sol_num +=1
         
-        print(min_cost)
+        log.info(f"minimum cost found: {min_cost}")
         return min_cost, min_solution
 
 
     def solve_all_paths(self, obst_file):
+        ''' 
+        with an obstacle map file, construct and solve boolean 
+        formula representations for 3 different path types. 
+        '''
+        # parse obstacle file
         self.read_obst_csv(obst_file)
+
+        # build paths through the graph
         diagonal_path = self.build_path(0)
         up_right_path = self.build_path(1)
         right_up_path = self.build_path(2)
 
+        # find boolean formula solutions 
+        
+        log.info(f"\n\nFind all SAT solutions for diagonal path")
+        log.info("----------------------------------------")
         diagonal_results = self.solve(diagonal_path) 
-        # up_right_results = self.solve(up_right_path)
-        # right_up_results = self.solve(right_up_path) 
+        log.info(f"\n\nFind all SAT solutions for up-right path")
+        log.info("----------------------------------------")
+        up_right_results = self.solve(up_right_path)
+        log.info(f"\n\nFind all SAT solutions for right-up path")
+        log.info("----------------------------------------")
+        right_up_results = self.solve(right_up_path) 
 
-        # self.best_cost(diagonal_results)
+        # find best solution for each path type
+        log.info("\n\nCalculate diagonal path solution costs")
+        log.info("--------------------------------------")
         diagonal_cost, diagonal_sol = self.best_cost(diagonal_results)
-        # up_right_cost, up_right_sol = self.best_cost()
-        # right_up_cost, right_up_sol = self.best_cost()
+        log.info("\nCalculate up-right path solution costs")
+        log.info("--------------------------------------")
+        up_right_cost, up_right_sol = self.best_cost(up_right_results)
+        log.info("\nCalculate right-up path solution costs")
+        log.info("--------------------------------------")
+        right_up_cost, right_up_sol = self.best_cost(right_up_results)
 
 
 if __name__ == "__main__":
@@ -283,8 +352,6 @@ if __name__ == "__main__":
     '''
     
     m = map_sat()
-
-    # m.solve("test1.csv", 2)
 
     # pass in obstacle csv to the solver
     m.solve_all_paths("test1.csv")
