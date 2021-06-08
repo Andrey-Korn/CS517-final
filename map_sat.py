@@ -13,7 +13,7 @@ import csv
 from utils import data_generation
 
 DEBUG = True
-CSV_DEBUG = False
+CSV_DEBUG = True
 
 class map_sat():
 
@@ -26,12 +26,13 @@ class map_sat():
         self.num_obst = 0
 
 
-    def read_obst_csv(self, filename):
+    def read_obst_csv(self, filename="test1.csv"):
 
         with open(filename) as file:
             csv_reader = csv.reader(file, delimiter=",")
             line_count = 0
-            self.obst = []
+            # self.obst = []
+            self.obst = {}
             for row in csv_reader:
 
                 # first line in csv is graph size
@@ -43,29 +44,29 @@ class map_sat():
                 elif line_count == 1:
                     self.num_obst = int(row[0])
 
-                # add obstacles as a quintuple representing:
+                # add obstacles as a 5-tuple representing:
                 # x1, x2, y1, y2 of the rectangle, and weight 
                 else:
-                    # uncomment this line for formatting including weight
+                    # dictionary append
+                    self.obst[Symbol(f"o{line_count - 2}")] = ((int(row[0])
+                                                              , int(row[1])
+                                                              , int(row[2])
+                                                              , int(row[3])
+                                                              , int(row[4]) ))
+
+                    # list append
                     # self.obst.append((int(row[0])
                     #                 , int(row[1])
                     #                 , int(row[2])
                     #                 , int(row[3]) 
-                    #                 , int(row[5]) ))
-
-
-                    # uncomment this line for formatting excluding weight
-                    self.obst.append((int(row[0])
-                                    , int(row[1])
-                                    , int(row[2])
-                                    , int(row[3]) ))
+                    #                 , int(row[4]) ))
 
                 line_count += 1
 
             if(CSV_DEBUG):
                 print(f"size of map: {self.n} x {self.n}")
                 print(f"number of obstacles: {self.num_obst}")
-                print(f"obstacle_list: {self.obst}\n")
+                print(f"obstacle_dictionary: {self.obst}\n")
 
 
     def print_map(self):
@@ -147,7 +148,8 @@ class map_sat():
         return False
 
 
-    def covered_by_obst(self, pt, obst):
+    def covered_by_obst(self, pt, obst_num):
+        obst = self.obst[self.obst_symbol(obst_num)]
         x, y = pt[0], pt[1]
         if obst[0] <= x <= obst[1] and obst[2] <= y <= obst[3]:
             return True
@@ -157,14 +159,15 @@ class map_sat():
     def pt_obst_coverage(self, pt):
         pt_obst_list = []
         for i in range(self.num_obst):
-            if self.covered_by_obst(pt, self.obst[i]):
+            # if self.covered_by_obst(pt, self.obst[i]):
+            if self.covered_by_obst(pt, i):
                 pt_obst_list.append(i)
         return pt_obst_list
 
 
     def is_obstructed(self, pt):
         for i in range(self.num_obst):
-            if self.covered_by_obst(pt, self.obst[i]):
+            if self.covered_by_obst(pt, i):
                 return True
         return False
 
@@ -173,7 +176,7 @@ class map_sat():
         pt_obst_list = self.pt_obst_coverage(pt)
 
         if pt_obst_list:
-            formula = Or([Symbol(f"o{i}") for i in pt_obst_list])
+            formula = Or([self.obst_symbol(i) for i in pt_obst_list])
             return formula
         else:
             return TRUE()
@@ -186,6 +189,10 @@ class map_sat():
         formula = And(self.construct_pt_clause(path[k]) for k in range(0, self.k))
 
         return formula
+
+
+    def obst_symbol(self, obst_num):
+        return Symbol(f"o{obst_num}")
 
 
     def build_result_formula(self, literals):
@@ -206,15 +213,14 @@ class map_sat():
             print("\nformula of chosen path:")
             # print(f"full      : {formula}")
             print(f"full      : {formula.serialize()}")
-            print(f"simplified: {simplify(formula)}")
-            print(f"obstacles : {get_atoms(formula)}\n")
+            # print(f"simplified: {simplify(formula)}")
+            # print(f"obstacles : {get_atoms(formula)}\n")
 
             res = get_model(formula)
 
             if res:
                 print("SAT")
                 # print(res)
-                
                 solutions.append(res)
                 negated_solution = Not(self.build_result_formula(res))
                 # print(negated_solution)
@@ -227,19 +233,40 @@ class map_sat():
         return solutions
 
 
-    def best_cost(self):
-        pass
+    def best_cost(self, solutions):
+        min_cost = float('inf')
+        min_solution = None
+        for sol in solutions:
+            print("solution")
+            current_cost = 0
+            for lit in sol:
+                print(lit[0], lit[1])
+                current_cost += self.obst[lit[0]][4] * (int(lit[1] == TRUE()))
+
+            print(current_cost)
+
+            if current_cost <= min_cost:
+                min_cost = current_cost
+                min_solution = sol
+        
+        print(min_cost)
+        return min_cost, min_solution
 
 
     def solve_all_paths(self, obst_file):
         self.read_obst_csv(obst_file)
-        diagonal_results = self.solve(self.build_path(0)) 
-        # up_right_results = self.solve(self.build_path(1)) 
-        # right_up_results = self.solve(self.build_path(2)) 
+        diagonal_path = self.build_path(0)
+        up_right_path = self.build_path(1)
+        right_up_path = self.build_path(2)
 
-        # diagonal_cost, diagonal_path = self.best_cost()
-        # up_right_cost, up_right_path = self.best_cost()
-        # right_up_cost, right_up_path = self.best_cost()
+        diagonal_results = self.solve(diagonal_path) 
+        # up_right_results = self.solve(up_right_path)
+        # right_up_results = self.solve(right_up_path) 
+
+        # self.best_cost(diagonal_results)
+        diagonal_cost, diagonal_sol = self.best_cost(diagonal_results)
+        # up_right_cost, up_right_sol = self.best_cost()
+        # right_up_cost, right_up_sol = self.best_cost()
 
 
 if __name__ == "__main__":
