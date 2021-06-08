@@ -9,7 +9,7 @@ colors = ['r', 'g', 'b', 'k', '#a6cee3','#ffff99','#b2df8a','#33a02c','#fb9a99',
 
 
 def data_generation(N, num_block, plotting=False):
-    file_name = f'./dataset/{N}x{N}_{num_block}blocks.csv'
+    file_name = f'./mapData/{N}x{N}_{num_block}blocks.csv'
     result = []
 
     # random block for start point s
@@ -49,7 +49,7 @@ def data_generation(N, num_block, plotting=False):
             ax.add_patch(Rectangle((x0-0.3, y0-0.3), x1-x0+0.6, y1-y0+0.6, linewidth=1, facecolor=colors[i], alpha=0.5))
 
         limits = plt.axis('on')
-        f.savefig(f'./dataset/{N}x{N}_{num_block}blocks.png')
+        f.savefig(f'./mapData/{N}x{N}_{num_block}blocks.png')
 
 
     return file_name
