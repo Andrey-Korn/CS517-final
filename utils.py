@@ -1,8 +1,11 @@
+
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import networkx as nx
 import csv
+import argparse
 
 result_directory = 'resultData'
 map_directory = 'mapData'
@@ -11,7 +14,7 @@ map_directory = 'mapData'
 colors = ['r', 'g', 'b', 'k', '#a6cee3','#ffff99','#b2df8a','#33a02c','#fb9a99','#e31a1c','#ff7f00','#1f78b4','#fdbf6f','#cab2d6','#6a3d9a','#b15928']
 
 
-def data_generation(N, num_block, plotting=False):
+def data_generation(N, num_block):
     # create map directory
     if not os.path.exists(map_directory):
         os.makedirs(map_directory)
@@ -95,15 +98,15 @@ def map_plotting(filename):
     width = 0.06
     head_width = 0.2
     head_length = 0.3
-    if draw_path == 'right':
+    if path_type == 'right':
         for i in range(1, N):
             ax.arrow(0, 0, i-0.25, 0, width = width, head_width=head_width, head_length=head_length, fc='k', ec='k')
             ax.arrow(N-1, 0, 0, i-0.25, width = width, head_width=head_width, head_length=head_length, fc='k', ec='k')
-    elif draw_path == 'up':
+    elif path_type == 'up':
         for i in range(1, N):
             ax.arrow(0, 0, 0, i-0.25, width = width, head_width=head_width, head_length=head_length, fc='k', ec='k')
             ax.arrow(0, N-1, i-0.25, 0, width = width, head_width=head_width, head_length=head_length, fc='k', ec='k')
-    elif draw_path == 'diagonal':
+    elif path_type == 'diagonal':
         for i in range(1, N):
             ax.arrow(i-1, i-1, 0.75, 0, width = width, head_width=head_width, head_length=head_length, fc='k', ec='k')
             ax.arrow(i, i-1, 0, 0.75, width = width, head_width=head_width, head_length=head_length, fc='k', ec='k')
@@ -112,19 +115,34 @@ def map_plotting(filename):
     limits = plt.axis('on')
 
     # save map plotting
-    if draw_path:
-        f.savefig(f'./mapData/{N}x{N}_{num_obstacle}blocks_{draw_path}.png')
+    if path_type == 'map':
+        f.savefig(f'./{map_directory}/{N}x{N}_{num_obstacle}blocks.png')
     else:
-        f.savefig(f'./mapData/{N}x{N}_{num_obstacle}blocks.png')
+        f.savefig(f'./{result_directory}/{N}x{N}_{num_obstacle}blocks_{path_type}.png')
 
 
 def main():
     parser = argparse.ArgumentParser(description='Data generation and graphing utility.')
-    parser.add_argument("filename", help='filepath of obstacle map csv input')
+    parser.add_argument("--graph", help='specify file_path of input or result data to graph')
+    parser.add_argument("--generate", type=int, nargs="*", action='append', help='generate obstacle map of a certain size and obstacle number.')
     args = parser.parse_args()
 
-    # data_generation(15, 5, plotting=True)
-    map_plotting('./mapData/5x5_3blocks.csv', draw_path='diagonal')
+    if(args.generate and args.graph):
+        parser.error("Please only specify 1 argument type, either --graph or --generate")
+        quit()
+
+    if(args.generate):
+        if len(args.generate[0]) != 2:
+            parser.error("please follow this format: --generate N num_obstacles")
+        else:
+            data_generation(args.generate[0][0], args.generate[0][1])
+
+    elif(args.graph):
+        map_plotting(args.graph)
+
+    else:
+        print("No flags specified")
+        print("please run --help for usage")
 
 
 if __name__ == '__main__':
