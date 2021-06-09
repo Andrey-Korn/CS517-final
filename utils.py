@@ -4,12 +4,19 @@ from matplotlib.patches import Rectangle
 import networkx as nx
 import csv
 
+result_directory = 'resultData'
+map_directory = 'mapData'
+
 # 16 colors
 colors = ['r', 'g', 'b', 'k', '#a6cee3','#ffff99','#b2df8a','#33a02c','#fb9a99','#e31a1c','#ff7f00','#1f78b4','#fdbf6f','#cab2d6','#6a3d9a','#b15928']
 
 
 def data_generation(N, num_block, plotting=False):
-    file_name = f'./mapData/{N}x{N}_{num_block}blocks.csv'
+    # create map directory
+    if not os.path.exists(map_directory):
+        os.makedirs(map_directory)
+
+    file_name = f'./{map_directory}/{N}x{N}_{num_block}blocks.csv'
     result = []
 
     # random block for start point s
@@ -26,6 +33,7 @@ def data_generation(N, num_block, plotting=False):
 
     with open(file_name, mode='w') as csv_file:
         writer = csv.writer(csv_file, delimiter=',')
+        writer.writerow(["map"])
         writer.writerow([N])
         writer.writerow([num_block])
 
@@ -34,12 +42,14 @@ def data_generation(N, num_block, plotting=False):
     return file_name
     
     
-def map_plotting(filename, draw_path=None):
+def map_plotting(filename):
     """
     :param filename: csv file directory
     :param draw_path: 'up': up->right; 'right'->'right->up'; 'diagonal'
     :return: None
     """
+
+    path_type = None
 
     # parse map data
     N, num_obstacle = 0, 0
@@ -48,11 +58,14 @@ def map_plotting(filename, draw_path=None):
     with open(filename) as file:
         csv_reader = csv.reader(file, delimiter=",")
         for row in csv_reader:
-            # first line in csv is graph size
+            # first line in csv is map type
             if line_count == 0:
-                N = int(row[0])
-            # second line in csv is # obstacles
+                path_type = row[0]
+            # second line in csv is graph size
             elif line_count == 1:
+                N = int(row[0])
+            # third line in csv is # obstacles
+            elif line_count == 2:
                 num_obstacle = int(row[0])
             # add obstacles as a 5-tuple to a list:
             # (x1, x2, y1, y2 of the rectangle, weight)
@@ -106,6 +119,10 @@ def map_plotting(filename, draw_path=None):
 
 
 def main():
+    parser = argparse.ArgumentParser(description='Data generation and graphing utility.')
+    parser.add_argument("filename", help='filepath of obstacle map csv input')
+    args = parser.parse_args()
+
     # data_generation(15, 5, plotting=True)
     map_plotting('./mapData/5x5_3blocks.csv', draw_path='diagonal')
 
