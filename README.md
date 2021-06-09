@@ -16,13 +16,13 @@ Either with or without a virtual environment, run the following to install all n
 > `pip install -r requirements.txt`
 
 ### Install SMT Solver
-Install MathSAT (other solvers would likely work as well):
+- Install MathSAT (other solvers would likely work as well):
 > `pysmt-install --msat`
-Update PYTHONPATH:
+- Update PYTHONPATH:
 > `pysmt-install --env`
-Run output of the above command. Example for my machine below:
+- Run output of the above command. Example for my machine below:
 > `export PYTHONPATH="/home/andrey/.local/lib/python3.6/site-packages:${PYTHONPATH}"`
-After exporting the path, everything should be ready to use.
+- After exporting the path, everything should be ready to use.
 
 ### Leave virtual environment
 > `deactivate`
