@@ -86,6 +86,7 @@ class map_sat():
 
 
     def write_result_csv(self, solution, file_path, path_name):
+        '''Write final solutions as csv to resultData/ directory'''
         # create result directory
         if not os.path.exists(result_directory):
             os.makedirs(result_directory)
@@ -287,6 +288,7 @@ class map_sat():
         with an obstacle map file, construct and solve boolean 
         formula representations for 3 different path types. 
         '''
+
         # parse obstacle file
         self.read_obst_csv(obst_file)
 
