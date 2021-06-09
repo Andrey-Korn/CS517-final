@@ -118,13 +118,14 @@ def map_plotting(filename):
     if path_type == 'map':
         f.savefig(f'./{map_directory}/{N}x{N}_{num_obstacle}blocks.png')
     else:
-        f.savefig(f'./{result_directory}/{N}x{N}_{num_obstacle}blocks_{path_type}.png')
+        original_obstacle_count = int(filename[filename.find("_")+1:filename.find("b")])
+        f.savefig(f'./{result_directory}/{N}x{N}_{original_obstacle_count}blocks_{path_type}.png')
 
 
 def main():
     parser = argparse.ArgumentParser(description='Data generation and graphing utility.')
-    parser.add_argument("--graph", help='specify file_path of input or result data to graph')
-    parser.add_argument("--generate", type=int, nargs="*", action='append', help='generate obstacle map of a certain size and obstacle number.')
+    parser.add_argument("--graph", nargs=1, help='specify file_path of input or result data to graph')
+    parser.add_argument("--generate", type=int, nargs=2, action='append', help='generate obstacle map of a certain size and obstacle number.')
     args = parser.parse_args()
 
     if(args.generate and args.graph):
@@ -132,13 +133,10 @@ def main():
         quit()
 
     if(args.generate):
-        if len(args.generate[0]) != 2:
-            parser.error("please follow this format: --generate N num_obstacles")
-        else:
-            data_generation(args.generate[0][0], args.generate[0][1])
+        data_generation(args.generate[0][0], args.generate[0][1])
 
     elif(args.graph):
-        map_plotting(args.graph)
+        map_plotting(args.graph[0])
 
     else:
         print("No flags specified")
