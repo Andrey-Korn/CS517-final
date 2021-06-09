@@ -44,19 +44,19 @@ After exporting the path, everything should be ready to use.
 ## Generating and graphing data
 `util.py` is used for generating and graphing .csv formatted data. The data generation utility needs 2 integer arguments, the graph size, and obstacle count. It will also automatically place new data in the `mapData/` directory. The graphing utility requires a filepath of the .csv you would like to graph. The outputs will always be placed in `mapData/` if it is an input case, and in `resultData/` if it's a result case.
 
-Data generation example of graph size 8 with 6 obstacles 
+Data generation example of graph size 8 with 6 obstacles:
 
 `python3 utils.py --generate 8 6`
 
-Graph generation example for an input case
+Graph generation example for an input case:
 
 `python3 utils.py --graph mapData/8x8_6blocks.csv`
 
-Graph generation example for a result case
+Graph generation example for a result case:
 
 `python3 utils.py --graph resultData/8x8_6blocks_diagonal.csv`
 
-Help
+Help:
  
 `python3 utils.py --help`
 
@@ -71,7 +71,7 @@ Solve and automatically graph using the above graphing utility:
 
 `python3 map_sat.py mapData/8x8_6blocks.csv --graph`
 
-Help
+Help:
 
 `python3 map_sat.py --help`
 
@@ -85,4 +85,4 @@ After running `map_sat.py`, the following are logged to `info.log`:
 - Cost calculation of all solutions
 - Best solutions and costs for all 3 s-t paths
 
-The script erases this filename at the beginning each run, so rename logfiles you would like to keep. 
+The `map_sat()` class always erases this filename whenever the class is instantiated, so rename logfiles you would like to keep. 
