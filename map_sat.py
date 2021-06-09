@@ -13,9 +13,12 @@ import numpy as np
 import argparse
 import csv
 
-from utils import data_generation
+# import utils.py 
+# import utils
 
-debug_file = 'info.log'
+result_directory = 'resultData'
+map_directory = 'mapData'
+log_file = 'info.log'
 
 class map_sat():
 
@@ -24,24 +27,24 @@ class map_sat():
         self.n = 0
         self.k = 0
         self.path = []
-        self.obst = []
+        self.obst = {}
         self.num_obst = 0
 
         # delete old log file
-        if os.path.isfile(debug_file):
-            os.remove(debug_file)
+        if os.path.isfile(log_file):
+            os.remove(log_file)
 
         # setup log file
-        log.basicConfig(format='%(message)s', filename=debug_file, level=log.INFO)
+        log.basicConfig(format='%(message)s', filename=log_file, level=log.INFO)
 
 
     def read_obst_csv(self, filename="test1.csv"):
         '''
-        Read in obstacle csv. First line is graph size n, second
+        Read in obstacle csv. Second line is graph size n, third
         line is #_obstacles, and the following are obstacle coordinates
         '''
 
-        with open(filename) as file:
+        with open(filename, 'r') as file:
             csv_reader = csv.reader(file, delimiter=",")
 
             # save obstacles to class for use later
@@ -51,19 +54,23 @@ class map_sat():
             # iterate through csv
             for row in csv_reader:
 
-                # first line in csv is graph size
+                # first line denotes input type
                 if line_count == 0:
+                    assert row != "map", "This is a result file! Please input a correct map input."
+                
+                # first line in csv is graph size
+                elif line_count == 1:
                     self.n = int(row[0])
                     self.k = (2 * self.n) - 1
 
                 # second line in csv is # obstacles
-                elif line_count == 1:
+                elif line_count == 2:
                     self.num_obst = int(row[0])
 
                 # add obstacles as a 5-tuple to a dictionary:
                 # (x1, x2, y1, y2 of the rectangle, weight) 
                 else:
-                    self.obst[Symbol(f"o{line_count - 2}")] = ((int(row[0])
+                    self.obst[Symbol(f"o{line_count - 3}")] = ((int(row[0])
                                                               , int(row[1])
                                                               , int(row[2])
                                                               , int(row[3])
@@ -78,36 +85,30 @@ class map_sat():
             log.info(f"obstacle_dictionary: {self.obst}\n")
 
 
-    def print_map(self):
-        '''
-        print contents of the map to the terminal
-        '0' == uncovered   
-        '1' == covered by an obstacle
-        '-' == critical chosen path. Uncovered
-        '!' == critical chosen path. Covered by an obstacle
-        '''
-        print("\n")
-        graph = np.empty((self.n, self.n), dtype='str')
+    def write_result_csv(self, solution, file_name, path_name):
+        # create result directory
+        if not os.path.exists(result_directory):
+            os.makedirs(result_directory)
 
-        for x in range(self.n):
-            for y in range(self.n):
-                pt = (x, y)
-                if self.in_path(pt):
-                    # print("in path")
-                    if self.is_obstructed(pt):
-                        graph[y][x] = '!'
-                    else:
-                        graph[y][x] = '-'
-                else:
-                    if self.is_obstructed(pt):
-                        graph[y][x] = '1'
-                    else:
-                        graph[y][x] = '0'
+        # write solution csv to result folder
+        _, tail = os.path.split(file_name)
+        tail = tail.split('.')[0]
+        file_path = f"{result_directory}/{tail}_{path_name}.csv"
+        if os.path.exists(file_path):
+            os.remove(file_path)
 
-        # print(self.is_obstructed(0,4))
-        # print map, reverse the rows for clarity
-        for y in range(self.n - 1, -1, -1):
-            print(graph[y])
+        with open(file_path, mode='w') as csv_file:
+            writer = csv.writer(csv_file, delimiter=',')
+            writer.writerow([path_name])
+            writer.writerow([self.n])
+            num_obstacles = 0
+            for obstacle in solution:
+                if obstacle[1] == TRUE():
+                    num_obstacles += 1
+            writer.writerow([num_obstacles])
+            for obstacle in solution:
+                if obstacle[1] == TRUE():
+                    writer.writerow([self.obst[obstacle[0]][i] for i in range(0, 5)])
 
 
     def build_path(self, path_type):
@@ -152,14 +153,6 @@ class map_sat():
         return path
 
 
-    # delete if old graph function is removed
-    def in_path(self, pt):
-        for i in range(len(self.path)):
-            if self.path[i] == pt:
-                return True
-        return False
-
-
     def covered_by_obst(self, pt, obst_num):
         '''check if (x,y) covered by a specific obstacle'''
         # grab obstacle from dictionary
@@ -179,15 +172,7 @@ class map_sat():
                 pt_obst_list.append(i)
         return pt_obst_list
 
-
-    # delete alongside old graph function
-    def is_obstructed(self, pt):
-        for i in range(self.num_obst):
-            if self.covered_by_obst(pt, i):
-                return True
-        return False
-
-
+ 
     def construct_pt_clause(self, pt):
         '''
         Return Boolean formula for a point clause for SAT checking.
@@ -215,7 +200,7 @@ class map_sat():
 
     def obst_symbol(self, obst_num):
         '''
-        return SMT bool symbol for an obstacle, used both for constructing
+        return SMT bool symbol for an obstacle. Used both for constructing
         formulas, and for generating obstacle dictionary keys
         '''
         return Symbol(f"o{obst_num}")
@@ -228,9 +213,6 @@ class map_sat():
         Use Iff() to force equality between the obstacle symbol and previous
         T/F value.
         '''
-        # for value in literals:
-            # print(value[0], value[1])
-
         # loop through all boolean values
         return And([Iff(val[0], val[1]) for val in literals])
 
@@ -261,8 +243,8 @@ class map_sat():
                 log.info("SAT solution:")
                 log.info(f"{res}\n")
 
-                # get negation of result. Add to formula and rerun to 
-                # find all solutions
+                # get negation of result. Add to formula and rerun 
+                # to find all solutions
                 negated_solution = Not(self.build_result_formula(res))
                 formula = And(negated_solution, formula)
 
@@ -287,6 +269,7 @@ class map_sat():
         for sol in solutions:
             current_cost = 0
             for lit in sol:
+                # add obstacle cost if it was chosen in solution
                 current_cost += self.obst[lit[0]][4] * (int(lit[1] == TRUE()))
 
             log.info(f"cost of solution {sol_num}: {current_cost}")
@@ -338,20 +321,19 @@ class map_sat():
         right_up_cost, right_up_sol = self.best_cost(right_up_results)
 
 
+        # save best obstacle removal to csv result
+        self.write_result_csv(diagonal_sol, obst_file, "diagonal")
+        self.write_result_csv(up_right_sol, obst_file, "up")
+        self.write_result_csv(right_up_sol, obst_file, "right")
+
+        
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='check 2d robot map satisfiability.')
-    # parser.add_argument('int 2D grid size')
-    
-    '''
-    parser.add_argument('--size', type=int, default=5)
-    parser.add_argument('--blocks', type=int, default=4)
+    parser.add_argument("filename", help='filepath of obstacle map csv input')
+    # parser.add_argument("--auto")
     args = parser.parse_args()
-
-    # generate data (16 blocks at most)
-    data_directory = data_generation(args.size, args.blocks)
-    '''
     
     m = map_sat()
 
     # pass in obstacle csv to the solver
-    m.solve_all_paths("test1.csv")
+    m.solve_all_paths(args.filename)
