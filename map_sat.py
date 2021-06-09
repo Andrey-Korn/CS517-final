@@ -356,7 +356,7 @@ class map_sat():
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='check 2d robot map satisfiability.')
-    parser.add_argument("filename", help="filepath of obstacle map csv input")
+    parser.add_argument("filename", nargs=1, help="filepath of obstacle map csv input")
     parser.add_argument("--graph", help="automatically plot the result graph",
                          action="store_true")
     args = parser.parse_args()
