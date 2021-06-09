@@ -1,0 +1,157 @@
+Obstacle data read successfully
+size of map: 5 x 5
+length of paths: 9
+number of obstacles: 5
+obstacle_dictionary: {o0: (0, 2, 0, 2, 3), o1: (3, 3, 2, 4, 1), o2: (1, 3, 3, 3, 4), o3: (0, 2, 2, 3, 1), o4: (1, 3, 0, 0, 3)}
+
+diagonal path:
+[(0, 0), (1, 0), (1, 1), (2, 1), (2, 2), (3, 2), (3, 3), (4, 3), (4, 4)]
+
+up -> right path:
+[(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (1, 4), (2, 4), (3, 4), (4, 4)]
+
+right -> up path:
+[(0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (4, 1), (4, 2), (4, 3), (4, 4)]
+
+
+
+Find all SAT solutions for diagonal path
+----------------------------------------
+Boolean formula of path:
+full      : (o0 & (o0 | o4) & o0 & o0 & (o0 | o3) & o1 & (o1 | o2) & True & True)
+simplified: (o0 & o1 & (o0 | o4) & (o0 | o3) & (o1 | o2))
+obstacles : frozenset({o0, o1, o2, o3, o4})
+
+SAT solution:
+o2 := False
+o1 := True
+o3 := False
+o0 := True
+o4 := False
+
+SAT solution:
+o2 := False
+o1 := True
+o3 := False
+o0 := True
+o4 := True
+
+SAT solution:
+o2 := False
+o1 := True
+o3 := True
+o0 := True
+o4 := True
+
+SAT solution:
+o2 := False
+o1 := True
+o3 := True
+o0 := True
+o4 := False
+
+SAT solution:
+o2 := True
+o1 := True
+o3 := True
+o0 := True
+o4 := False
+
+SAT solution:
+o2 := True
+o1 := True
+o3 := True
+o0 := True
+o4 := True
+
+SAT solution:
+o2 := True
+o1 := True
+o3 := False
+o0 := True
+o4 := True
+
+SAT solution:
+o2 := True
+o1 := True
+o3 := False
+o0 := True
+o4 := False
+
+UNSAT, no more solutions.
+
+
+Find all SAT solutions for up-right path
+----------------------------------------
+Boolean formula of path:
+full      : (o0 & o0 & (o0 | o3) & o3 & True & True & True & o1 & True)
+simplified: ((o0 | o3) & o0 & o1 & o3)
+obstacles : frozenset({o0, o1, o3})
+
+SAT solution:
+o1 := True
+o3 := True
+o0 := True
+
+UNSAT, no more solutions.
+
+
+Find all SAT solutions for right-up path
+----------------------------------------
+Boolean formula of path:
+full      : (o0 & (o0 | o4) & (o0 | o4) & o4 & True & True & True & True & True)
+simplified: ((o0 | o4) & o0 & o4)
+obstacles : frozenset({o0, o4})
+
+SAT solution:
+o4 := True
+o0 := True
+
+UNSAT, no more solutions.
+
+
+Calculate diagonal path solution costs
+--------------------------------------
+cost of solution 1: 4
+cost of solution 2: 7
+cost of solution 3: 8
+cost of solution 4: 5
+cost of solution 5: 9
+cost of solution 6: 12
+cost of solution 7: 11
+cost of solution 8: 8
+minimum cost found: 4
+
+Calculate up-right path solution costs
+--------------------------------------
+cost of solution 1: 5
+minimum cost found: 5
+
+Calculate right-up path solution costs
+--------------------------------------
+cost of solution 1: 6
+minimum cost found: 6
+
+
+Final results
+-----------------------------------------------------------
+cost of best diagonal path: 4
+cost of best up-right path: 5
+cost of best right-up path: 6
+
+best diagonal solution:
+o2 := False
+o1 := True
+o3 := False
+o0 := True
+o4 := False
+
+best up-right solution:
+o1 := True
+o3 := True
+o0 := True
+
+best right-up solution:
+o4 := True
+o0 := True
+
