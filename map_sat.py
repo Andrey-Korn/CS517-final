@@ -14,7 +14,7 @@ import argparse
 import csv
 
 # import utils.py 
-# import utils
+import utils
 
 result_directory = 'resultData'
 map_directory = 'mapData'
@@ -85,15 +85,13 @@ class map_sat():
             log.info(f"obstacle_dictionary: {self.obst}\n")
 
 
-    def write_result_csv(self, solution, file_name, path_name):
+    def write_result_csv(self, solution, file_path, path_name):
         # create result directory
         if not os.path.exists(result_directory):
             os.makedirs(result_directory)
 
         # write solution csv to result folder
-        _, tail = os.path.split(file_name)
-        tail = tail.split('.')[0]
-        file_path = f"{result_directory}/{tail}_{path_name}.csv"
+        file_path = f"{file_path}_{path_name}.csv"
         if os.path.exists(file_path):
             os.remove(file_path)
 
@@ -284,7 +282,7 @@ class map_sat():
         return min_cost, min_solution
 
 
-    def solve_all_paths(self, obst_file):
+    def solve_all_paths(self, obst_file,  graph=False):
         ''' 
         with an obstacle map file, construct and solve boolean 
         formula representations for 3 different path types. 
@@ -322,18 +320,51 @@ class map_sat():
 
 
         # save best obstacle removal to csv result
-        self.write_result_csv(diagonal_sol, obst_file, "diagonal")
-        self.write_result_csv(up_right_sol, obst_file, "up")
-        self.write_result_csv(right_up_sol, obst_file, "right")
+        _, file_name = os.path.split(obst_file)
+        file_name = file_name.split('.')[0]
+        file_path = f"{result_directory}/{file_name}"
+        self.write_result_csv(diagonal_sol, file_path, "diagonal")
+        self.write_result_csv(up_right_sol, file_path, "up")
+        self.write_result_csv(right_up_sol, file_path, "right")
+        
+        print(f"cost of best diagonal path: {diagonal_cost}")
+        print(f"cost of best up-right path: {up_right_cost}")
+        print(f"cost of best right-up path: {right_up_cost}")
+
+        # logs
+        log.info("\n\nFinal results")
+        log.info("-----------------------------------------------------------")
+        log.info(f"cost of best diagonal path: {diagonal_cost}")
+        log.info(f"cost of best up-right path: {up_right_cost}")
+        log.info(f"cost of best right-up path: {right_up_cost}\n")
+        
+        log.info(f"best diagonal solution:")
+        log.info(f"{diagonal_sol}\n")
+        log.info(f"best up-right solution:")
+        log.info(f"{up_right_sol}\n")
+        log.info(f"best right-up solution:")
+        log.info(f"{right_up_sol}\n")
+
+        print("see info.log for more full boolean solutions and other stats")
+
+        # graph results if requested
+        if(graph):
+            utils.map_plotting(f"{file_path}_diagonal.csv")
+            utils.map_plotting(f"{file_path}_up.csv")
+            utils.map_plotting(f"{file_path}_right.csv")
 
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='check 2d robot map satisfiability.')
-    parser.add_argument("filename", help='filepath of obstacle map csv input')
-    # parser.add_argument("--auto")
+    parser.add_argument("filename", help="filepath of obstacle map csv input")
+    parser.add_argument("--graph", help="automatically plot the result graph",
+                         action="store_true")
     args = parser.parse_args()
     
     m = map_sat()
 
-    # pass in obstacle csv to the solver
-    m.solve_all_paths(args.filename)
+    # pass in obstacle csv filename to the solver, and optional graphing flag
+    if(args.graph):
+        m.solve_all_paths(args.filename, args.graph)
+    else:
+        m.solve_all_paths(args.filename)
