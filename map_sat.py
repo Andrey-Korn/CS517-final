@@ -365,6 +365,6 @@ if __name__ == "__main__":
 
     # pass in obstacle csv filename to the solver, and optional graphing flag
     if(args.graph):
-        m.solve_all_paths(args.filename, args.graph)
+        m.solve_all_paths(args.filename[0], args.graph)
     else:
-        m.solve_all_paths(args.filename)
+        m.solve_all_paths(args.filename[0])
