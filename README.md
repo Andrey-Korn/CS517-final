@@ -9,7 +9,7 @@ It is recommended that you set up the project within a python virtual environmen
 > `python3 -m venv env`
 - start virtual environment:
 > `source env/bin/activate`
-Now you should be in the virtual environment. Anything you install with pip in this environment will be contained inside the env folder and not affect the rest of your system.
+- Now you should be in the virtual environment. Anything you install with pip in this environment will be contained inside the env folder and not affect the rest of your system.
 
 ### Install packages
 Either with or without a virtual environment, run the following to install all necessary packages:
