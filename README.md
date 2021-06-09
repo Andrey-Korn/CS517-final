@@ -1,4 +1,4 @@
-# Mininum Obstacle Removal in a 2D graph: CS517 Final Project
+# Minimum Obstacle Removal in a 2D graph: CS517 Final Project
 ## Installation
 An environment with python3 is required. Guide is intended for Linux or macOS users.
 ### Virtual Environment
@@ -15,16 +15,16 @@ Now you should be in the virtual environment. Anything you install with pip in t
 Either with or without the virtual environment setup, run the following to install all packages:
 `pip install -r requirements.txt`
 
-### install SMT Solver
+### Install SMT Solver
 - Install MathSAT (other solvers would likely work as well):
-`pysmt-install --msat`
+> `pysmt-install --msat`
 - Update PYTHONPATH:
-`pysmt-install --env`
+> `pysmt-install --env`
 - Run output of the above command. Example for my machine below:
-`export PYTHONPATH="/home/andrey/.local/lib/python3.6/site-packages:${PYTHONPATH}"`
+> `export PYTHONPATH="/home/andrey/.local/lib/python3.6/site-packages:${PYTHONPATH}"`
 
 ### Leave virtual environment
-`deactivate`
+> `deactivate`
 
 ## Solving and Graphing
 
