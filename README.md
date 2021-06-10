@@ -1,10 +1,11 @@
 # Minimum Obstacle Removal in a 2D graph: CS517 Final Project
 ## Installation
-An environment with python3 is required. Guide is intended for Linux or macOS users.
+An environment with python3 is required. Guide is intended for Linux or macOS users. Tested on flip.engr.oregonstate.edu and on local machines
+
 ### Virtual Environment
 It is recommended that you set up the project within a python virtual environment, to avoid installing unnecessary packages onto your system, but it is optional. Run the following inside the project directory to create the virtual environment:
 
-Install python3-venv:
+Install python3-venv if you do not have it:
 
 `apt-get install python3-venv`
 
@@ -20,6 +21,10 @@ Now you should be in the virtual environment. Anything you install with pip in t
 
 ### Install packages
 Either with or without a virtual environment, run the following to install all necessary packages:
+
+Upgrade pip and install requirements:
+
+`pip install --upgrade pip`
 
 `pip install -r requirements.txt`
 
