@@ -1,4 +1,4 @@
-# Minimum Obstacle Removal in a 2D graph: CS517 Final Project
+# Minimum Obstacle Removal in a 2D grid: CS517 Final
 ## Installation
 An environment with python3 is required. Guide is intended for Linux or macOS users. Tested on flip.engr.oregonstate.edu and on local machines
 
@@ -70,11 +70,11 @@ Help:
 
 Usage:
 
-`python3 map_sat.py mapData/8x8_6blocks.csv`
-
-Solve and automatically graph using the above graphing utility:
-
 `python3 map_sat.py mapData/8x8_6blocks.csv --graph`
+
+Without auto-graphing of result:
+
+`python3 map_sat.py mapData/8x8_6blocks.csv`
 
 Help:
 
